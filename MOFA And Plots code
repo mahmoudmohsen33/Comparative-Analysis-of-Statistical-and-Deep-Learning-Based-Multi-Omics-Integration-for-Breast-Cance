@@ -1,0 +1,606 @@
+library(MOFA2)
+library(readxl)
+library(Rtsne)
+library(ggplot2)
+library(dplyr)
+library(circlize)
+library(fmsb)
+library(UpSetR)
+library(VennDiagram)
+library(grid)
+Meta_Data = read.table('Modified_Meta_Data.csv', header = TRUE, sep = ',')
+mRNA_Data = read.table('Modified_mRNA_Data.csv', header = TRUE, sep = ',')
+scaled_mRNA <- scale(transformed_data)
+# Function to check if a row contains more than 50% zeros
+has_more_than_50_percent_zeros <- function(row) {
+  zero_count <- sum(row == 0)
+  zero_count > (length(row) / 2)
+}
+
+# Identify rows with more than 50% zeros
+rows_to_remove <- apply(mRNA_Data, 1, has_more_than_50_percent_zeros)
+
+# Remove rows with more than 50% zeros
+mRNA_Data <- mRNA_Data[!rows_to_remove, , drop = FALSE]
+
+# Replace remaining zeros with row means
+mRNA_Data[rowSums(mRNA_Data == 0) > 0, ] <- t(apply(mRNA_Data[rowSums(mRNA_Data == 0) > 0, ], 1, function(row) {
+  row[row == 0] <- mean(row[row != 0])
+  row
+}))
+Methylation_Data = read.table('Modified_Methylation_Data.csv', header = TRUE, sep = ',')
+scaled_Methylation <- scale(Methylation_Data)
+Microbiome_Data = read.table('Modified_Microbiome_Data.csv', header = TRUE, sep = ',')
+scaled_microbiome <- scale(Microbiome_Data)
+# Get column names for each matrix
+colnames_matrix1 <- colnames(scaled_Methylation)
+colnames_matrix2 <- colnames(scaled_microbiome)
+colnames_matrix3 <- colnames(scaled_mRNA)
+# Check if column names are the same across all matrices
+are_column_names_equal <- identical(colnames_matrix1, colnames_matrix2) &&
+                         identical(colnames_matrix1, colnames_matrix3) &&
+                         identical(colnames_matrix1, colnames_matrix4)
+
+# Print the result
+if (are_column_names_equal) {
+  print("Column names are the same across all matrices.")
+} else {
+  print("Column names are not the same across all matrices.")
+}
+data <- make_example_data(
+  n_views = 3, 
+  n_samples = 200, 
+  n_features = 100, 
+  n_factors = 10
+)[[1]]
+
+names(data) <- c("Transcriptomics", "Epigenomics", "Microbiomics")
+#add to each list the omics 
+
+data[["Transcriptomics"]] = scaled_mRNA
+data[["Epigenomics"]] = scaled_Methylation
+data[["Microbiomics"]] = scaled_microbiome
+
+MOFAobject <- create_mofa(data)
+MOFAobject
+#overview of training data ## The rows are the different views and columns are samples. Missing values are indicated by a grey bar.
+plot_data_overview(MOFAobject)
+#Fit the MOFA model
+#Define options
+data_opts <- get_default_data_options(MOFAobject)
+data_opts
+#Define model options
+model_opts <- get_default_model_options(MOFAobject)
+model_opts 
+#Define training options
+train_opts <- get_default_training_options(MOFAobject)
+train_opts
+train_opts$convergence_mode ="slow"
+train_opts$maxiter =400000
+train_opts
+MOFAobject <- prepare_mofa(
+  object = MOFAobject,
+  data_options = data_opts,
+  model_options = model_opts,
+  training_options = train_opts
+#Run MOFA This step can take some time 
+MOFAobject <- run_mofa(MOFAobject,use_basilisk = TRUE)
+r2 <- get_variance_explained(MOFAobject)
+r2$r2_total
+# Variance explained by each factor in each view
+head(r2$r2_per_factor)
+plot_variance_explained(MOFAobject)
+# Assuming Metadata is your metadata data frame and Sample.ID is the column containing sample names
+Meta_Data$sample <- Meta_Data$Sample.ID
+
+# Now assign the Metadata object to the samples_metadata slot of MOFAobject
+samples_metadata(MOFAobject) <- Meta_Data
+# model <- run_umap(model)
+model <- run_tsne(MOFAobject)
+
+
+MOFA_tSNE = plot_dimred(model,
+  method = "TSNE",  # method can be either "TSNE" or "UMAP"
+  color_by = "Subtype"
+)
+ggsave("tSNE_MOFA_plot.png", plot = MOFA_tSNE, width = 10, height = 8, units = "in", dpi = 1200)
+
+latent_data  = read.table('latent_data.csv', header = TRUE, sep = ',')
+latent_data 
+features <- latent_data[,-1]
+# Run t-SNE on the feature set
+set.seed(42)  # Set a seed for reproducibility
+MoGCN_tsne_results <- Rtsne(as.matrix(features), perplexity = 30, check_duplicates = FALSE)
+# Combine the t-SNE output with the metadata using 'Sample.ID' as the key
+tsne_data <- as.data.frame(MoGCN_tsne_results$Y)
+tsne_data$Sample <- latent_data$Sample
+
+# Join by sample ID
+tsne_data <- tsne_data %>%
+  left_join(Meta_Data, by = c("Sample" = "Sample.ID"))
+
+# Create the t-SNE plot colored by subtype
+MOGCN_tSNE = ggplot(tsne_data, aes(x = V1, y = V2, color = Subtype)) +  # Replace 'Subtype' with the actual subtype column name in metadata
+  geom_point() +
+  labs(title = "t-SNE plot colored by Subtype", x = "t-SNE Dimension 1", y = "t-SNE Dimension 2") +
+  theme_minimal()
+ggsave("tSNE_MOFA_plot.png", plot = MOGCN_tSNE, width = 10, height = 8, units = "in", dpi = 1200)
+
+circus plot
+# Read data from Excel file
+data <- read_excel("top-Cancer-related Pathways2.xlsx")
+
+# Check column names
+# Function to split text into multiple lines if there are two or more spaces
+split_text <- function(text) {
+  words <- unlist(strsplit(text, " "))
+  n <- length(words)
+  if (n > 2) {
+    # Split into two lines if there are more than two spaces
+    line1 <- paste(words[1:ceiling(n/2)], collapse = " ")
+    line2 <- paste(words[(ceiling(n/2) + 1):n], collapse = " ")
+    return(paste(line1, line2, sep = "\n"))
+  } else {
+    return(text)
+  }
+}
+
+# Apply the function to split text for the 'from' column
+links$from <- sapply(links$from, split_text)
+
+# Ensure a new plot is created
+plot.new()
+
+# Initialize Chord diagram
+circos.clear()
+circos.par(gap.after = c(rep(2, length(unique(links$from))-1), 10, rep(2, length(unique(links$to))-1), 10))
+
+# Generate the Chord diagram
+chordDiagram(
+  links,
+  transparency = 0.5,
+  annotationTrack = "grid",
+  preAllocateTracks = 1
+)
+
+# Add labels to the sectors with adjusted text size
+circos.track(track.index = 1, panel.fun = function(x, y) {
+  sector.index = get.cell.meta.data("sector.index")
+  xcenter = get.cell.meta.data("xcenter")
+  circos.text(xcenter, 1.05, sector.index, facing = "reverse.clockwise", niceFacing = TRUE, cex = 0.5)
+}, bg.border = NA)
+
+# Clear the circos plot
+circos.clear()
+# Save plot as PNG with high resolution
+png("high_quality_chord_diagram.png", width = 2000, height = 2100, res = 600)
+
+colnames(data)
+
+
+# Prepare links data by filtering out zero hits
+links <- data.frame(
+  from = rep(data$`Cancer-related Pathways`, each = 2),
+  to = rep(c("MOFA", "MoGCN"), times = nrow(data)),
+  value = c(rbind(data$MOFA, data$MoGCN))
+)
+
+# Filter out rows where value is zero
+links <- links[links$value != 0,]
+
+# Prepare links data by filtering out zero hits
+links <- data.frame(
+  from = rep(data$`Cellular Processes and Metabolism Pathways`, each = 2),
+  to = rep(c("MOFA", "MoGCN"), times = nrow(data)),
+  value = c(rbind(data$MOFA, data$MoGCN))
+)
+
+# Filter out rows where value is zero
+links <- links[links$value != 0,]
+# Function to split text into multiple lines if there are two or more spaces
+split_text <- function(text) {
+  words <- unlist(strsplit(text, " "))
+  n <- length(words)
+  if (n > 2) {
+    # Split into two lines if there are more than two spaces
+    line1 <- paste(words[1:ceiling(n/2)], collapse = " ")
+    line2 <- paste(words[(ceiling(n/2) + 1):n], collapse = " ")
+    return(paste(line1, line2, sep = "\n"))
+  } else {
+    return(text)
+  }
+}
+
+# Apply the function to split text for the 'from' column
+links$from <- sapply(links$from, split_text)
+
+# Ensure a new plot is created
+plot.new()
+
+# Initialize Chord diagram
+circos.clear()
+circos.par(gap.after = c(rep(2, length(unique(links$from))-1), 10, rep(2, length(unique(links$to))-1), 10))
+
+# Generate the Chord diagram
+chordDiagram(
+  links,
+  transparency = 0.5,
+  annotationTrack = "grid",
+  preAllocateTracks = 1
+)
+
+# Add labels to the sectors with adjusted text size
+circos.track(track.index = 1, panel.fun = function(x, y) {
+  sector.index = get.cell.meta.data("sector.index")
+  xcenter = get.cell.meta.data("xcenter")
+  circos.text(xcenter, 1.05, sector.index, facing = "reverse.clockwise", niceFacing = TRUE, cex = 0.5)
+}, bg.border = NA)
+
+# Clear the circos plot
+circos.clear()
+# Save plot as PNG with high resolution
+png("high_quality_chord_diagram.png", width = 2000, height = 2000, res = 600)
+# Prepare links data by filtering out zero hits
+links <- data.frame(
+  from = rep(data$`Immune System and Inflammation Pathways`, each = 2),
+  to = rep(c("MOFA", "MoGCN"), times = nrow(data)),
+  value = c(rbind(data$MOFA, data$MoGCN))
+)
+
+# Filter out rows where value is zero
+links <- links[links$value != 0,]
+# Ensure a new plot is created
+plot.new()
+
+# Initialize Chord diagram
+circos.clear()
+circos.par(gap.after = c(rep(2, length(unique(links$from))-1), 10, rep(2, length(unique(links$to))-1), 10))
+
+# Generate the Chord diagram
+chordDiagram(
+  links,
+  transparency = 0.5,
+  annotationTrack = "grid",
+  preAllocateTracks = 1
+)
+
+# Add labels to the sectors
+circos.track(track.index = 1, panel.fun = function(x, y) {
+  sector.index = get.cell.meta.data("sector.index")
+  xcenter = get.cell.meta.data("xcenter")
+  circos.text(xcenter, 1.05, sector.index, facing = "bending", niceFacing = TRUE)
+}, bg.border = NA)
+
+# Clear the circos plot
+circos.clear()
+# Prepare links data by filtering out zero hits
+links <- data.frame(
+  from = rep(data$`Signal Transduction Pathways`, each = 2),
+  to = rep(c("MOFA", "MoGCN"), times = nrow(data)),
+  value = c(rbind(data$MOFA, data$MoGCN))
+)
+
+# Filter out rows where value is zero
+links <- links[links$value != 0,]
+# Function to split text into multiple lines if there are two or more spaces
+split_text <- function(text) {
+  words <- unlist(strsplit(text, " "))
+  n <- length(words)
+  if (n > 2) {
+    # Split into two lines if there are more than two spaces
+    line1 <- paste(words[1:ceiling(n/2)], collapse = " ")
+    line2 <- paste(words[(ceiling(n/2) + 1):n], collapse = " ")
+    return(paste(line1, line2, sep = "\n"))
+  } else {
+    return(text)
+  }
+}
+
+# Apply the function to split text for the 'from' column
+links$from <- sapply(links$from, split_text)
+
+# Ensure a new plot is created
+plot.new()
+
+# Initialize Chord diagram
+circos.clear()
+circos.par(gap.after = c(rep(2, length(unique(links$from))-1), 10, rep(2, length(unique(links$to))-1), 10))
+
+# Generate the Chord diagram
+chordDiagram(
+  links,
+  transparency = 0.5,
+  annotationTrack = "grid",
+  preAllocateTracks = 1
+)
+
+# Add labels to the sectors with adjusted text size
+circos.track(track.index = 1, panel.fun = function(x, y) {
+  sector.index = get.cell.meta.data("sector.index")
+  xcenter = get.cell.meta.data("xcenter")
+  circos.text(xcenter, 1.05, sector.index, facing = "reverse.clockwise", niceFacing = TRUE, cex = 0.5)
+}, bg.border = NA)
+
+# Clear the circos plot
+circos.clear()
+# Save plot as PNG with high resolution
+png("high_quality_chord_diagram.png", width = 2000, height = 2000, res = 600)
+:# Load the data
+MOFA_nodes <- read.csv('MOFA_node_table.csv')
+MoGCN_nodes <- read.csv('MoGCN_node_table.csv')
+
+# Ensure both datasets have the same nodes
+common_nodes <- intersect(MOFA_nodes$Id, MoGCN_nodes$Id)
+MOFA_nodes <- MOFA_nodes[MOFA_nodes$Id %in% common_nodes, ]
+MoGCN_nodes <- MoGCN_nodes[MoGCN_nodes$Id %in% common_nodes, ]
+
+# Sort both dataframes by Id
+MOFA_nodes <- MOFA_nodes[order(MOFA_nodes$Id), ]
+MoGCN_nodes <- MoGCN_nodes[order(MoGCN_nodes$Id), ]
+
+# Compute Euclidean distances
+degree_distances <- sqrt((MOFA_nodes$Degree - MoGCN_nodes$Degree)^2)
+betweenness_distances <- sqrt((MOFA_nodes$Betweenness - MoGCN_nodes$Betweenness)^2)
+
+# Calculate average distances
+average_degree_distance <- mean(degree_distances)
+average_betweenness_distance <- mean(betweenness_distances)
+
+# Log transformation to scale values
+average_degree_distance_log <- log1p(average_degree_distance)
+average_betweenness_distance_log <- log1p(average_betweenness_distance)
+
+# Example edge distances (replace with actual data if available)
+edge_distances <- c(log1p(0.3), log1p(0.2))
+
+# Combine data into a dataframe with a dummy variable
+data <- data.frame(
+  Degree = c(average_degree_distance_log, edge_distances[1], 0),
+  Betweenness = c(average_betweenness_distance_log, edge_distances[2], 0),
+  Dummy = c(1, 1, 1)  # Dummy variable with values to ensure it contributes to the chart
+)
+
+# Normalize data
+max_val <- max(data)
+data <- data / max_val
+
+# Transpose the dataframe for radar chart
+data <- as.data.frame(t(data))
+
+# Add a row of maximum values for scaling
+data <- rbind(rep(1, ncol(data)), rep(0, ncol(data)), data)
+
+# Check the final dataframe structure
+print(data)
+
+# Plot radar chart
+colors_border <- c(rgb(0.2, 0.5, 0.5, 0.9), rgb(0.8, 0.2, 0.5, 0.9))
+colors_in <- c(rgb(0.2, 0.5, 0.5, 0.4), rgb(0.8, 0.2, 0.5, 0.4))
+
+radarchart(data, axistype=1, 
+           pcol=colors_border, pfcol=colors_in, plwd=2, plty=1,
+           cglcol="grey", cglty=1, axislabcol="grey", caxislabels=seq(0, 1, 0.2), cglwd=0.8,
+           vlcex=0.8)
+
+legend(x=1, y=1, legend=c("Node Distance", "Edge Distance"), bty="n", pch=20, 
+       col=colors_border, text.col="black", cex=1.2, pt.cex=3)
+@# Load the data
+MOFA_nodes <- read.csv('MOFA_node_table.csv')
+MoGCN_nodes <- read.csv('MoGCN_node_table.csv')
+
+# Ensure both datasets have the same nodes
+common_nodes <- intersect(MOFA_nodes$Id, MoGCN_nodes$Id)
+MOFA_nodes <- MOFA_nodes[MOFA_nodes$Id %in% common_nodes, ]
+MoGCN_nodes <- MoGCN_nodes[MoGCN_nodes$Id %in% common_nodes, ]
+
+# Sort both dataframes by Id
+MOFA_nodes <- MOFA_nodes[order(MOFA_nodes$Id), ]
+MoGCN_nodes <- MoGCN_nodes[order(MoGCN_nodes$Id), ]
+
+# Compute Euclidean distances
+degree_distances <- sqrt((MOFA_nodes$Degree - MoGCN_nodes$Degree)^2)
+betweenness_distances <- sqrt((MOFA_nodes$Betweenness - MoGCN_nodes$Betweenness)^2)
+
+# Calculate average distances
+average_degree_distance <- mean(degree_distances)
+average_betweenness_distance <- mean(betweenness_distances)
+
+# Log transformation to scale values
+average_degree_distance_log <- log1p(average_degree_distance)
+average_betweenness_distance_log <- log1p(average_betweenness_distance)
+
+# Example edge distances (replace with actual data if available)
+edge_distances <- c(log1p(0.3), log1p(0.2))
+
+# Combine data into a dataframe with a dummy variable
+data <- data.frame(
+  Degree = c(average_degree_distance_log, edge_distances[1], 0),
+  Betweenness = c(average_betweenness_distance_log, edge_distances[2], 0),
+  Dummy = c(1, 1, 1)  # Dummy variable with values to ensure it contributes to the chart
+)
+
+# Normalize data
+max_val <- max(data)
+data <- data / max_val
+
+# Transpose the dataframe for radar chart
+data <- as.data.frame(t(data))
+
+# Add a row of maximum values for scaling
+data <- rbind(rep(1, ncol(data)), rep(0, ncol(data)), data)
+
+# Check the final dataframe structure
+print(data)
+
+# Plot radar chart
+colors_border <- c(rgb(0.2, 0.5, 0.5, 0.9), rgb(0.8, 0.2, 0.5, 0.9))
+colors_in <- c(rgb(0.2, 0.5, 0.5, 0.4), rgb(0.8, 0.2, 0.5, 0.4))
+
+radarchart(data, axistype=1, 
+           pcol=colors_border, pfcol=colors_in, plwd=2, plty=1,
+           cglcol="grey", cglty=1, axislabcol="grey", caxislabels=seq(0, 1, 0.2), cglwd=0.8,
+           vlcex=0.8)
+
+legend(x=1, y=1, legend=c("Node Distance", "Edge Distance"), bty="n", pch=20, 
+       col=colors_border, text.col="black", cex=1.2, pt.cex=3)
+?# Load the data
+MOFA_nodes <- read.csv('MOFA_node_table.csv')
+MoGCN_nodes <- read.csv('MoGCN_node_table.csv')
+
+# Ensure both datasets have the same nodes
+common_nodes <- intersect(MOFA_nodes$Id, MoGCN_nodes$Id)
+MOFA_nodes <- MOFA_nodes[MOFA_nodes$Id %in% common_nodes, ]
+MoGCN_nodes <- MoGCN_nodes[MoGCN_nodes$Id %in% common_nodes, ]
+
+# Sort both dataframes by Id
+MOFA_nodes <- MOFA_nodes[order(MOFA_nodes$Id), ]
+MoGCN_nodes <- MoGCN_nodes[order(MoGCN_nodes$Id), ]
+
+# Compute Euclidean distances
+degree_distances <- sqrt((MOFA_nodes$Degree - MoGCN_nodes$Degree)^2)
+betweenness_distances <- sqrt((MOFA_nodes$Betweenness - MoGCN_nodes$Betweenness)^2)
+
+# Calculate average distances
+average_degree_distance <- mean(degree_distances)
+average_betweenness_distance <- mean(betweenness_distances)
+
+# Log transformation to scale values
+average_degree_distance_log <- log1p(average_degree_distance)
+average_betweenness_distance_log <- log1p(average_betweenness_distance)
+
+# Example edge distances (replace with actual data if available)
+edge_distances <- c(log1p(0.3), log1p(0.2))
+
+# Combine data into a dataframe with a dummy variable
+data <- data.frame(
+  Degree = c(average_degree_distance_log, edge_distances[1], 0),
+  Betweenness = c(average_betweenness_distance_log, edge_distances[2], 0),
+  Dummy = c(1, 1, 1)  # Dummy variable with values to ensure it contributes to the chart
+)
+
+# Normalize data
+max_val <- max(data)
+data <- data / max_val
+
+# Transpose the dataframe for radar chart
+data <- as.data.frame(t(data))
+
+# Add a row of maximum values for scaling
+data <- rbind(rep(1, ncol(data)), rep(0, ncol(data)), data)
+
+# Check the final dataframe structure
+print(data)
+
+# Plot radar chart
+colors_border <- c(rgb(0.2, 0.5, 0.5, 0.9), rgb(0.8, 0.2, 0.5, 0.9))
+colors_in <- c(rgb(0.2, 0.5, 0.5, 0.4), rgb(0.8, 0.2, 0.5, 0.4))
+
+radarchart(data, axistype=1, 
+           pcol=colors_border, pfcol=colors_in, plwd=2, plty=1,
+           cglcol="grey", cglty=1, axislabcol="grey", caxislabels=seq(0, 1, 0.2), cglwd=0.8,
+           vlcex=0.8)
+
+legend(x=1, y=1, legend=c("Node Distance", "Edge Distance"), bty="n", pch=20, 
+       col=colors_border, text.col="black", cex=1.2, pt.cex=3)
+># Load the data
+MOFA_nodes <- read.csv('MOFA_node_table.csv')
+MoGCN_nodes <- read.csv('MoGCN_node_table.csv')
+
+# Ensure both datasets have the same nodes
+common_nodes <- intersect(MOFA_nodes$Id, MoGCN_nodes$Id)
+MOFA_nodes <- MOFA_nodes[MOFA_nodes$Id %in% common_nodes, ]
+MoGCN_nodes <- MoGCN_nodes[MoGCN_nodes$Id %in% common_nodes, ]
+
+# Sort both dataframes by Id
+MOFA_nodes <- MOFA_nodes[order(MOFA_nodes$Id), ]
+MoGCN_nodes <- MoGCN_nodes[order(MoGCN_nodes$Id), ]
+
+# Compute Euclidean distances
+degree_distances <- sqrt((MOFA_nodes$Degree - MoGCN_nodes$Degree)^2)
+betweenness_distances <- sqrt((MOFA_nodes$Betweenness - MoGCN_nodes$Betweenness)^2)
+
+# Calculate average distances
+average_degree_distance <- mean(degree_distances)
+average_betweenness_distance <- mean(betweenness_distances)
+
+# Log transformation to scale values
+average_degree_distance_log <- log1p(average_degree_distance)
+average_betweenness_distance_log <- log1p(average_betweenness_distance)
+
+# Example edge distances (replace with actual data if available)
+edge_distances <- c(log1p(0.3), log1p(0.2))
+
+# Combine data into a dataframe with a dummy variable
+data <- data.frame(
+  Degree = c(average_degree_distance_log, edge_distances[1], 0),
+  Betweenness = c(average_betweenness_distance_log, edge_distances[2], 0),
+  Dummy = c(1, 1, 1)  # Dummy variable with values to ensure it contributes to the chart
+)
+
+# Normalize data
+max_val <- max(data)
+data <- data / max_val
+
+# Transpose the dataframe for radar chart
+data <- as.data.frame(t(data))
+
+# Add a row of maximum values for scaling
+data <- rbind(rep(1, ncol(data)), rep(0, ncol(data)), data)
+
+# Check the final dataframe structure
+print(data)
+
+# Plot radar chart
+colors_border <- c(rgb(0.2, 0.5, 0.5, 0.9), rgb(0.8, 0.2, 0.5, 0.9))
+colors_in <- c(rgb(0.2, 0.5, 0.5, 0.4), rgb(0.8, 0.2, 0.5, 0.4))
+
+radarchart(data, axistype=1, 
+           pcol=colors_border, pfcol=colors_in, plwd=2, plty=1,
+           cglcol="grey", cglty=1, axislabcol="grey", caxislabels=seq(0, 1, 0.2), cglwd=0.8,
+           vlcex=0.8)
+
+legend(x=1, y=1, legend=c("Node Distance", "Edge Distance"), bty="n", pch=20, 
+       col=colors_border, text.col="black", cex=1.2, pt.cex=3)
+#Upset plot
+# Load the data
+MOFA_node_table <- read.csv("MOFA_node_table.csv")
+MoGCN_node_table <- read.csv("MoGCN_node_table.csv")
+# Create lists of node IDs for each network
+MOFA_nodes <- MOFA_node_table$Id
+MoGCN_nodes <- MoGCN_node_table$Id
+
+# Combine them into a named list
+node_list <- list(MOFA = MOFA_nodes, MoGCN = MoGCN_nodes)
+upset(fromList(node_list), 
+      order.by = "freq", 
+      main.bar.color = "darkgreen", 
+      sets.bar.color = "darkgray", 
+      sets = c("MOFA", "MoGCN"), 
+      keep.order = TRUE, 
+      point.size = 3, 
+      line.size = 1)
+# Venn diagram
+# Load the data
+MoGCN_enrichment <- read.csv("MoGCN_omicsnet_enrichment_1.csv")
+MOFA_enrichment <- read.csv("MOFA_omicsnet_enrichment_1.csv")
+# Filter significant pathways
+MoGCN_significant <- MoGCN_enrichment$Pathway[MoGCN_enrichment$FDR < 0.05]
+MOFA_significant <- MOFA_enrichment$Pathway[MOFA_enrichment$FDR < 0.05]
+# Create a Venn diagram
+venn.plot <- venn.diagram(
+  x = list(
+    MoGCN = MoGCN_significant,
+    MOFA = MOFA_significant
+  ),
+  category.names = c("MoGCN", "MOFA"),
+  filename = NULL, # NULL to plot in R console
+  fill = c("red", "blue"),
+  alpha = 0.5,
+  cex = 1.5,
+  fontface = "bold",
+  fontfamily = "sans"
+)
+
+# Plot the Venn diagram
+grid.newpage()
+grid.draw(venn.plot)
