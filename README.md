@@ -1,0 +1,9 @@
+Abstract.
+Background
+Breast cancer (BC) is a critical cause of cancer-related death globally. The heterogeneity of BC subtypes poses challenges in understanding molecular mechanisms, early diagnosis, and disease management. Recent studies sug-gest that integrating multi-omics layers can significantly enhance BC  sub-type identification. However, evaluating different multi-omics integration methods for BC subtyping remains ambiguous. 
+Methods
+In this study, we conducted a multi-omics integration analysis on 960 BC patient samples, incorporating three omics layers: Transcriptomics, Microbi-omics, and Epigenomics. We compared two integration approaches—the sta-tistical-based approach (MOFA+) and a deep learning-based approach (MOGCN) for this integration. We evaluated both methods using comple-mentary evaluation criteria. First, we assessed the ability of selected features to discriminate between BC subtypes using both linear and nonlinear classi-fication models. Second, we analyzed the biological relevance of the selected features to key BC pathways, focusing on transcriptomics-driven insights. 
+Results
+Our results showed that MOFA+ outperformed MOGCN in feature selection, achieving the highest F1 score (0.75) in the nonlinear classification model, with MOFA+ also identifying 121 relevant pathways compared to 100 from MOGCN. Notably, two key pathways—Fc gamma R-mediated phagocytosis and the SNARE pathway—were implicated, offering insights into immune responses and tumor progression. 
+Conclusion 
+These findings suggest that MOFA+ is a more effective unsupervised tool for feature selection in BC subtyping. Our study underscores the potential of multi-omics integration to improve BC subtype prediction and provides criti-cal insights for advancing personalized medicine in BC. 
