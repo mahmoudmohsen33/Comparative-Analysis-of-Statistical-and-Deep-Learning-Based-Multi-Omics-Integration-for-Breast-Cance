@@ -1,4 +1,3 @@
-Abstract.
 Background
 Breast cancer (BC) is a critical cause of cancer-related death globally. The heterogeneity of BC subtypes poses challenges in understanding molecular mechanisms, early diagnosis, and disease management. Recent studies sug-gest that integrating multi-omics layers can significantly enhance BC  sub-type identification. However, evaluating different multi-omics integration methods for BC subtyping remains ambiguous. 
 Methods
