@@ -6,3 +6,4 @@ Results
 Our results showed that MOFA+ outperformed MOGCN in feature selection, achieving the highest F1 score (0.75) in the nonlinear classification model, with MOFA+ also identifying 121 relevant pathways compared to 100 from MOGCN. Notably, two key pathways—Fc gamma R-mediated phagocytosis and the SNARE pathway—were implicated, offering insights into immune responses and tumor progression. 
 Conclusion 
 These findings suggest that MOFA+ is a more effective unsupervised tool for feature selection in BC subtyping. Our study underscores the potential of multi-omics integration to improve BC subtype prediction and provides criti-cal insights for advancing personalized medicine in BC. 
+![Methodology](https://github.com/user-attachments/assets/a534ed27-4855-40df-9425-6a6b57b1956b)
