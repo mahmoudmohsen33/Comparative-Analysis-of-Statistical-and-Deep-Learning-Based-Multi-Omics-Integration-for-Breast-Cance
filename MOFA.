@@ -101,6 +101,7 @@ MOFA_tSNE = plot_dimred(model,
 )
 ggsave("tSNE_MOFA_plot.png", plot = MOFA_tSNE, width = 10, height = 8, units = "in", dpi = 1200)
 
+
 latent_data  = read.table('latent_data.csv', header = TRUE, sep = ',')
 latent_data 
 features <- latent_data[,-1]
