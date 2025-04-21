@@ -25,5 +25,5 @@ Our results show that MOFA+ outperformed MoGCN in both classification accuracy a
 ```bash
 MOFA/         - MOFA+ training and feature extraction scripts (R)
 MoGCN/        - MoGCN autoencoder training and latent feature extraction (Python)
-notebooks/    - Jupyter notebooks for ML analysis and visualization (classification, clustering)
+Machine learining/    - Jupyter notebooks for ML analysis and visualization (classification, clustering)
 README.md     - This file
