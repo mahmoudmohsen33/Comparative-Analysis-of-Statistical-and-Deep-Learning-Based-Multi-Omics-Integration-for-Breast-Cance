@@ -10,7 +10,7 @@ This repository supports our study comparing two approaches for multi-omics inte
 
 ---
 
-##  Abstract (Paraphrased)
+##  Abstract
 
 Breast cancer remains one of the leading causes of cancer mortality worldwide. The disease's subtype heterogeneity complicates early detection, clinical management, and therapeutic targeting. Integrating multiple omics layers has emerged as a promising strategy to improve breast cancer subtype prediction. However, a comparative evaluation of different integration strategies is still limited.
 
