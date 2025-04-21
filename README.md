@@ -1,9 +1,29 @@
-Background
-Breast cancer (BC) is a critical cause of cancer-related death globally. The heterogeneity of BC subtypes poses challenges in understanding molecular mechanisms, early diagnosis, and disease management. Recent studies sug-gest that integrating multi-omics layers can significantly enhance BC  sub-type identification. However, evaluating different multi-omics integration methods for BC subtyping remains ambiguous. 
-Methods
-In this study, we conducted a multi-omics integration analysis on 960 BC patient samples, incorporating three omics layers: Transcriptomics, Microbi-omics, and Epigenomics. We compared two integration approaches—the sta-tistical-based approach (MOFA+) and a deep learning-based approach (MOGCN) for this integration. We evaluated both methods using comple-mentary evaluation criteria. First, we assessed the ability of selected features to discriminate between BC subtypes using both linear and nonlinear classi-fication models. Second, we analyzed the biological relevance of the selected features to key BC pathways, focusing on transcriptomics-driven insights. 
-Results
-Our results showed that MOFA+ outperformed MOGCN in feature selection, achieving the highest F1 score (0.75) in the nonlinear classification model, with MOFA+ also identifying 121 relevant pathways compared to 100 from MOGCN. Notably, two key pathways—Fc gamma R-mediated phagocytosis and the SNARE pathway—were implicated, offering insights into immune responses and tumor progression. 
-Conclusion 
-These findings suggest that MOFA+ is a more effective unsupervised tool for feature selection in BC subtyping. Our study underscores the potential of multi-omics integration to improve BC subtype prediction and provides criti-cal insights for advancing personalized medicine in BC. 
+#  Comparative Analysis of Statistical and Deep Learning-Based Multi-Omics Integration for Breast Cancer Subtype Classification
+
+This repository supports our study comparing two approaches for multi-omics integration—MOFA+ (statistical) and MoGCN (deep learning)—applied to breast cancer subtype classification. The project leverages transcriptomics, epigenomics, and microbiome data from 960 breast cancer patients to evaluate how each integration method contributes to molecular subtyping and pathway discovery.
+
+---
+
+##  Graphical Abstract
+
 ![Methodology](https://github.com/user-attachments/assets/a534ed27-4855-40df-9425-6a6b57b1956b)
+
+---
+
+##  Abstract (Paraphrased)
+
+Breast cancer remains one of the leading causes of cancer mortality worldwide. The disease's subtype heterogeneity complicates early detection, clinical management, and therapeutic targeting. Integrating multiple omics layers has emerged as a promising strategy to improve breast cancer subtype prediction. However, a comparative evaluation of different integration strategies is still limited.
+
+In this study, we analyzed multi-omics data from 960 breast cancer patients, incorporating transcriptomics, microbiome, and epigenomics profiles. We compared two integration methods—MOFA+ (a statistical model) and MoGCN (a graph-based deep learning model)—across two key evaluation aspects. First, we measured the discriminative power of features selected by each method using both linear and nonlinear classification models. Second, we examined the biological relevance of these features in relation to known breast cancer pathways.
+
+Our results show that MOFA+ outperformed MoGCN in both classification accuracy and pathway enrichment. Specifically, MOFA+ achieved a higher F1 score (0.75) in nonlinear classification and identified more biologically meaningful pathways, including Fc gamma R-mediated phagocytosis and the SNARE signaling pathway. These findings highlight the effectiveness of MOFA+ in unsupervised multi-omics feature selection and underscore the broader potential of integrative approaches to improve personalized breast cancer treatment.
+
+---
+
+##  Repository Structure
+
+```bash
+MOFA/         - MOFA+ training and feature extraction scripts (R)
+MoGCN/        - MoGCN autoencoder training and latent feature extraction (Python)
+notebooks/    - Jupyter notebooks for ML analysis and visualization (classification, clustering)
+README.md     - This file
