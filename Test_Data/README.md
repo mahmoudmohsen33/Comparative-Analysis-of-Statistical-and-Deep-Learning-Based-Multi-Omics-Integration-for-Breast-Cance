@@ -75,6 +75,3 @@ The metadata file includes rich clinical and pathological annotations, such as:
 - This is a **synthetic or reduced real-world dataset** meant **only for testing and demonstration purposes**.
 - It does not fully represent biological complexity or clinical study populations.
 
-## 👤 Author
-
-Mahmoud M. Omran
