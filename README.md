@@ -23,7 +23,7 @@ Our results show that MOFA+ outperformed MoGCN in both classification accuracy a
 ##  Repository Structure
 
 ```bash
-mofa code/                           - MOFA+ training and feature extraction scripts (R)
+MOFA_Code/                           - MOFA+ training and feature extraction scripts (R)
 MoGCN/                           - MoGCN autoencoder training and latent feature extraction (Python)
 Feature_Evaluation_MOFA_MoGCN/    - Jupyter notebooks for machine learning evaluation and visualization (classification, clustering) based on selected features
 Test_Data/                       - Small-scale multi-omics datasets and metadata for pipeline testing
