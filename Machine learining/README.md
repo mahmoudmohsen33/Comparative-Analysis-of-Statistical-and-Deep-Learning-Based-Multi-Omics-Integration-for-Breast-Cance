@@ -2,7 +2,7 @@
 
 This folder contains **Python Jupyter Notebooks** used to evaluate machine learning models based on features selected by **MOFA** (Multi-Omics Factor Analysis) and **MoGCN** (Multi-omics Graph Convolutional Network).
 
-## 📜 Files
+## Files
 
 - **Evaluation of MOFA Selected Features.ipynb**  
   Evaluates features selected by MOFA using different classifiers.
