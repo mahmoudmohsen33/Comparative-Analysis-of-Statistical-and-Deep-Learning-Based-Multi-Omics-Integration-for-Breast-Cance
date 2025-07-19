@@ -19,7 +19,13 @@ In this study, we analyzed multi-omics data from 960 breast cancer patients, inc
 Our results show that MOFA+ outperformed MoGCN in both classification accuracy and pathway enrichment. Specifically, MOFA+ achieved a higher F1 score (0.75) in nonlinear classification and identified more biologically meaningful pathways, including Fc gamma R-mediated phagocytosis and the SNARE signaling pathway. These findings highlight the effectiveness of MOFA+ in unsupervised multi-omics feature selection and underscore the broader potential of integrative approaches to improve personalized breast cancer treatment.
 
 ---
+## 📄 Publication
 
+Our paper was published in *Journal of Translational Medicine* (2025):  
+**Comparative Analysis of Statistical and Deep Learning-Based Multi-Omics Integration for Breast Cancer Subtype Classification**  
+[🔗 View the full paper](https://link.springer.com/article/10.1186/s12967-025-06662-5)  
+
+---
 ##  Repository Structure
 
 ```bash
